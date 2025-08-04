@@ -9,7 +9,7 @@
     .vote-buttons { margin: 20px; }
     button { font-size: 18px; padding: 10px 20px; margin: 10px; cursor: pointer; }
     #results { margin-top: 30px; }
-    .label { font-weight: bold; font-size: 16px; margin-top: -10px; }
+    .label { font-weight: bold; font-size: 16px; margin-bottom: 5px; }
     #register-section { margin-top: 30px; }
   </style>
 </head>
@@ -41,13 +41,16 @@
     ];
 
     const users = new Set();
-    let registered = false;
+    let isEnot = false;
 
     function registerUser() {
       const input = document.getElementById('username');
       const name = input.value.trim();
       if (name && !users.has(name)) {
         users.add(name);
+        if (name.toLowerCase() === 'енот') {
+          isEnot = true;
+        }
         updateUserList();
         input.value = '';
       }
@@ -56,14 +59,9 @@
     function updateUserList() {
       const list = Array.from(users).map(u => `<li>${u}</li>`).join('');
       document.getElementById('user-list').innerHTML = `<h3>Зарегистрированы:</h3><ul>${list}</ul>`;
-      document.getElementById('start-button').style.display = 'inline-block';
-    }
-
-    function startGame() {
-      document.getElementById('register-section').style.display = 'none';
-      document.querySelector('.vote-buttons').style.display = 'block';
-      document.getElementById('round-info').style.display = 'block';
-      showPair();
+      if (isEnot) {
+        document.getElementById('start-button').style.display = 'inline-block';
+      }
     }
 
     function shuffle(array) {
@@ -75,21 +73,29 @@
     }
 
     const shuffled = shuffle([...allImages]);
-    const rounds = [[], [], []];
+    const rounds = [[]];
 
     for (let i = 0; i < shuffled.length; i += 2) {
       if (shuffled[i + 1]) {
         rounds[0].push([
-          { src: shuffled[i], votes: 0 },
-          { src: shuffled[i + 1], votes: 0 }
+          { src: shuffled[i], votes: 0, label: 'Мем 1' },
+          { src: shuffled[i + 1], votes: 0, label: 'Мем 2' }
         ]);
       } else {
-        rounds[1].push([{ src: shuffled[i], votes: 0 }]);
+        rounds[0].push([{ src: shuffled[i], votes: 0, label: 'Мем 1' }]);
       }
     }
 
     let currentRound = 0;
     let currentPair = 0;
+    let finalWinner = null;
+
+    function startGame() {
+      document.getElementById('register-section').style.display = 'none';
+      document.querySelector('.vote-buttons').style.display = 'block';
+      document.getElementById('round-info').style.display = 'block';
+      showPair();
+    }
 
     function showPair() {
       const pair = rounds[currentRound][currentPair];
@@ -97,12 +103,12 @@
       document.getElementById('meme-container').innerHTML = `
         <div>
           <div>
-            <img src="${pair[0].src}" alt="Мем 1">
             <div class="label">Мем 1</div>
+            <img src="${pair[0].src}" alt="Мем 1">
           </div>
           <div>
-            <img src="${pair[1].src}" alt="Мем 2">
             <div class="label">Мем 2</div>
+            <img src="${pair[1].src}" alt="Мем 2">
           </div>
         </div>
       `;
@@ -125,15 +131,23 @@
       currentRound++;
       currentPair = 0;
       if (winners.length === 1) {
-        document.getElementById('meme-container').innerHTML = `<h2>Победитель:</h2><img src="${winners[0].src}" alt="Победитель">`;
+        finalWinner = winners[0];
+        document.getElementById('meme-container').innerHTML = `
+          <h2>Победитель:</h2>
+          <div class="label">${finalWinner.label}</div>
+          <img src="${finalWinner.src}" alt="Победитель">
+        `;
         document.querySelector('.vote-buttons').style.display = 'none';
       } else {
         const next = [];
         for (let i = 0; i < winners.length; i += 2) {
           if (winners[i + 1]) {
-            next.push([winners[i], winners[i + 1]]);
+            next.push([
+              { ...winners[i], label: 'Мем 1' },
+              { ...winners[i + 1], label: 'Мем 2' }
+            ]);
           } else {
-            rounds[currentRound + 1].push([winners[i]]);
+            next.push([{ ...winners[i], label: 'Мем 1' }]);
           }
         }
         rounds[currentRound] = next;
